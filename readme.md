@@ -1,7 +1,9 @@
 # spring-security-study
+
 spring security에 대해 공부한 내용을 정리합니다.
 
 ## 스프링 시큐리티를 쓰는 이유
+
 * 증가하는 보안 위협에 대해 프레임워크 사용만으로 대응이 가능
   * 해커들은 항상 침입할 준비를 하고 있고 보안 취약점은 매일 같이 갱신됨
   * 따라서 보안 영역은 어렵고 힘든 부분일 수밖에 없음
@@ -30,6 +32,7 @@ graph LR
 ```
 
 ## 스프링 시큐리티 필터
+
 스프링 시큐리티에서는 요청과 응답을 가로채는 필터가 존재
 
 약 20종 이상
@@ -50,3 +53,52 @@ graph LR
     * `application.properties`에서 username과 password를 설정하면 in-memory에 로드됨
     * retreiveUser() 메서드가 로드된 username과 password를 바탕으로 UserDetails 객체를 생성해줌
     * 이 UserDetails를 additionalAuthenticationChecks() 메서드에게 전달하고 이 메서드는 기본 PasswordEncdoder를 사용하여 일치하는지 확인함
+
+## 스프링 시큐리티 기본 필터 체인 구현하기
+
+`SpringBootWebSecurityConfiguration` 클래스 내부에는 기본 설정을 변경하지 않았을 때 사용되는 기본 스프링 시큐리티 필터 체인이 존재함
+
+```java
+class SpringBootWebSecurityConfiguration {
+    //...
+    @Bean
+    @Order(SecurityProperties.BASIC_AUTH_ORDER)
+    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated());
+        http.formLogin(withDefaults());
+        http.httpBasic(withDefaults());
+        return http.build();
+    }
+    //...
+}
+```
+필터 체인을 새로 구현하여 빈으로 등록 않는다면 위 코드 그대로 등록됨
+
+### 예제 구성
+
+* `/contact`, `/notices`는 보안 인증 없이 접근 가능
+* `/myAccount`, `myBalance`, `myLoans`, `myCards`는 접근 시 보안 인증 필요
+
+보안 요구사항을 구현하기 위해서는 스프링 필터 체인을 알맞게 구현하면 됨
+
+```java
+@Configuration
+public class ProjectSecurityConfig {
+    @Bean
+    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(requests -> requests.requestMatchers(
+                                "/myAccount",
+                                "/myBalance",
+                                "/myLoans",
+                                "/myCards"
+                        ).authenticated()
+                        .requestMatchers(
+                                "/notices",
+                                "/contact"
+                        ).permitAll())
+                .formLogin(withDefaults())
+                .httpBasic(withDefaults());
+        return http.build();
+    }
+}
+```
