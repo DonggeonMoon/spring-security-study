@@ -14,15 +14,15 @@ spring security에 대해 공부한 내용을 정리합니다.
 
 ```mermaid
 ---
-title: spring security internal flow
+title: Spring Security Internal Flow
 ---
 graph LR
-    1[🖥 User Entered Credentials]-->|1|2[Spring Security Filters]
+    1[🖥 User Entered\nCredentials]-->|1|2[Spring Security\nFilters\n]
     2-->|2|3[Authentication]
     2-->|9|4[Spring context]
     2-->|3|5[Authentication Manager]
     5-->|4|6[Authentication Providers]
-    6-->|5|7[UserDetails Manager]
+    6-->|5|7[UserDetailsManager, UserDetailsService]
     6-->|6|8[Password Encoder]
     6-->|7|5
     5-->|8|2
@@ -37,5 +37,16 @@ graph LR
 * AuthorizationFilter - 공개 URL인 경우에만 통과
 * DefaultLoginPageGeneratingFilter - 비공개 URL 접근시 기본 로그인 페이지 보여줌
 * UsernamePasswordAuthenticationFilter - username과 password를 요청 서블릿에서 뽑아내는 역할
-  * UsernamePasswordAuthenticationToken(Authentication 구현체) 생성해줌
-  * AuthenticationManager에 인증 요청
+  * UsernamePasswordAuthenticationToken(Authentication 구현체) 생성해줌 
+  * ProviderManager(AuthenticationManager의 구현체)에 인증 요청(authenticate() 메서드)
+    * ProviderManager는 여러 AuthenticationProvider을 인증 성공할 때까지 순회 
+  * DaoAuthenticationProvider(AbstractUserDetailsAuthenticationProvider의 구현체)
+    * authenticate()가 인증 로직 수행
+      * retrieveUser()가 사용자 정보 가져옴
+      * retrieveUser()는 UserDetailsManager, UserDetailsService의 도움을 받음
+      * 저장소에서 사용자 정보를 가져와야 할 때 UserDetailsManager, UserDetailsService을 사용
+      * PasswordEncoder는 비밀번호를 암호화(해시)하는 데 사용
+  * DaoAuthenticationProvider는 InMemoryUserDetailsManager(UserDetailsManager 구현체)를 사용하여 사용자 정보를 가져옴
+    * `application.properties`에서 username과 password를 설정하면 in-memory에 로드됨
+    * retreiveUser() 메서드가 로드된 username과 password를 바탕으로 UserDetails 객체를 생성해줌
+    * 이 UserDetails를 additionalAuthenticationChecks() 메서드에게 전달하고 이 메서드는 기본 PasswordEncdoder를 사용하여 일치하는지 확인함
