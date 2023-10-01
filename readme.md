@@ -72,7 +72,7 @@ class SpringBootWebSecurityConfiguration {
     //...
 }
 ```
-필터 체인을 새로 구현하여 빈으로 등록 않는다면 위 코드 그대로 등록됨
+필터 체인을 새로 구현하여 빈으로 등록하지 않는다면, 위 코드 그대로 등록됨
 
 ### 예제 구성
 
@@ -102,3 +102,134 @@ public class ProjectSecurityConfig {
     }
 }
 ```
+
+## 연습용 코드
+아래 코드들은 실무에서는 쓰면 안 되지만 연습 혹은 데모 프로그램을 위한 보안 설정임
+
+1. 사용자 정보를 인메모리에 저장
+
+인메모리에 username과 password를 저장하기 위해서는 문자열을 하드 코딩해야 하므로 절대 권장하지 않는다.
+
+```java
+@Configuration
+public class ProjectSecurityConfig {
+    //...
+    @Bean
+    InMemoryUserDetailsManager userDetailService() {
+        UserDetails admin = User.withDefaultPasswordEncoder()
+                .username("admin")
+                .password("12345")
+                .authorities("admin")
+                .build();
+
+        UserDetails user2 = User.withDefaultPasswordEncoder()
+                .username("user")
+                .password("12345")
+                .authorities("read")
+                .build();
+
+        return new InMemoryUserDetailsManager(admin, user);
+    }
+}
+```
+
+2. 비밀번호를 암호화하지 않기
+
+비밀번호를 평문으로 저장, 비교
+```java
+@Configuration
+public class ProjectSecurityConfig {
+    //...
+    @Bean
+    InMemoryUserDetailsManager userDetailService() {
+      UserDetails admin = User.withUsername("admin")
+              .password("12345")
+              .authorities("admin")
+              .build();
+
+      UserDetails user = User.withUsername("user")
+              .password("12345")
+              .authorities("read")
+              .build();
+
+      return new InMemoryUserDetailsManager(admin, user);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+      return NoOpPasswordEncoder.getInstance();
+    }
+}
+```
+
+## 사용자 정보 관리
+
+* UserDetailsService - loadUserByUsername()로 사용자 정보 가져옴
+  * username과 password 두 가지 정보가 아닌 username으로만 조회하는 이유 - 불필요하게 실제 비밀번호를 네트워크나 데이터베이스 서버로 전송할 필요 없음 
+  * UserDetailsManager - UserDetailsService를 확장
+    * 사용자 생성, 수정, 삭제, 비밀번호 변경, 존재 확인 등 메서드 제공
+    * UserDetailsManager를 확장한 InMemoryUserDetailsManager, JdbcUserDetailsManager, LdapDetailsManager 클래스가 존재
+  * 스프링이 제공하는 인터페이스, 클래스일뿐이며 독자적인 로직이 있다면 사용하지 않아도 됨
+* UserDetails - 사용자 정보(username, password, authorities)를 나타내는 인터페이스
+  * 스프링이 구현해놓은 UserDetails 구현체인 User를 사용해도 되며, 직접 UserDetails를 구현하여 사용해도 됨
+  * UserDetails에는 보안상의 이유로 setter가 존재하지 않음. 즉, 한번 생성된 이후 username, password, authorities를 변경할 수 없음.
+
+### UserDetails vs. Authentication
+```mermaid
+classDiagram
+    UserDetails <.. User
+    Principal <.. Authentication
+    Authentication <.. UsernamePasswordAuthenticationToken
+    
+    class UsernamePasswordAuthenticationToken
+    UsernamePasswordAuthenticationToken : getName()
+    UsernamePasswordAuthenticationToken : getPrincipal()
+    UsernamePasswordAuthenticationToken : getAuthorities()
+    UsernamePasswordAuthenticationToken : getCredentials()
+    UsernamePasswordAuthenticationToken : getDetails()
+    UsernamePasswordAuthenticationToken : isAuthenticated()
+    UsernamePasswordAuthenticationToken : setAuthenticated()
+    UsernamePasswordAuthenticationToken : eraseCredentials()
+    
+    class User
+    User : getPassword()
+    User : getUsername()
+    User : getAuthorities()
+    User : isAccountNonExpired()
+    User : isAccountNonLocked()
+    User : isEnabled()
+    User : isCredentialsNonExpired()
+    User : eraseCredentials()
+    
+    class Principal
+    Principal : getName()
+```
+UserDetails는 저장소에서 사용자 정보를 가져올 때 사용되는 리턴 타입(UserDetailsService나 UserDetailsManger 등)
+
+Authentication은 인증 성공 여부를 결정할 때 사용되는 리턴 타입(AuthenticationProvider나 AuthenticationManager 등)
+
+### UserDetailsService & UserDetailsManager
+
+```mermaid
+classDiagram
+    UserDetailsService <.. UserDetailsManager
+    UserDetailsManager <.. InMemoryUserDetailsManger
+    UserDetailsManager <.. JdbcUserDetailsManger
+    UserDetailsManager <.. LdapUserDetailsManger
+    
+    class UserDetailsService
+    UserDetailsService : loadUserByUsername(String username)
+    
+    class UserDetailsManager
+    UserDetailsManager : createUser(UserDetails user)
+    UserDetailsManager : updateUser(UserDetails user)
+    UserDetailsManager : deleteUser(String username)
+    UserDetailsManager : changePassword(String oldPassword, String newPassword)
+    UserDetailsManager : userExists(String username)
+```
+
+UserDetailsService는 저장소에서 사용자 정보를 가져오는 역할
+
+UserDetailsManager는 사용자 정보와 관련된 동작들을 가지고 있음
+
+### 
