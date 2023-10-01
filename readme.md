@@ -213,9 +213,9 @@ Authentication은 인증 성공 여부를 결정할 때 사용되는 리턴 타�
 ```mermaid
 classDiagram
     UserDetailsService <.. UserDetailsManager
-    UserDetailsManager <.. InMemoryUserDetailsManger
-    UserDetailsManager <.. JdbcUserDetailsManger
-    UserDetailsManager <.. LdapUserDetailsManger
+    UserDetailsManager <.. InMemoryUserDetailsManager
+    UserDetailsManager <.. JdbcUserDetailsManager
+    UserDetailsManager <.. LdapUserDetailsManager
     
     class UserDetailsService
     UserDetailsService : loadUserByUsername(String username)
@@ -232,4 +232,10 @@ UserDetailsService는 저장소에서 사용자 정보를 가져오는 역할
 
 UserDetailsManager는 사용자 정보와 관련된 동작들을 가지고 있음
 
-### 
+### JdbcUserDetailsManager
+JdbcUserDetailsManager는 사용자 정보를 저장하기 위한 테이블 스키마를 갖고 있고, 이 스키마를 사용하지 않고 자신만의 테이블 스키마를 사용하려면
+
+## @EnableWebSecurity
+Spring Boot가 아닌 스프링 프로젝트에서는 웹 시큐리티를 활성화하기 위해 @EnableWebSecurity 애너테이션을 사용해야 함
+
+Spring Boot 애플리케이션에서는 자동으로 웹 시큐리티를 활성화함
