@@ -239,3 +239,17 @@ JdbcUserDetailsManager는 사용자 정보를 저장하기 위한 테이블 스�
 Spring Boot가 아닌 스프링 프로젝트에서는 웹 시큐리티를 활성화하기 위해 @EnableWebSecurity 애너테이션을 사용해야 함
 
 Spring Boot 애플리케이션에서는 자동으로 웹 시큐리티를 활성화함
+
+## PasswordEncoder
+비밀번호를 암호화하지 않고 평문으로 저장하는 것은 무결성, 기밀성에 위배
+
+* NoOpPasswordEncoder
+  * 비밀번호를 암호화하지 않는 PasswordEncoder. 실무에서 사용해서는 안 됨.
+
+## Encoding vs. Encryption vs. Hashing
+Encoding은 단순히 데이터를 다른 형태로 변환하는 것. 암호화와는 관련이 없으며 보안 목적으로 사용되지 않음.
+ex) ASCII, BASE64, Unicode
+
+Encryption은 기밀성을 보장하기 위한 데이터 변환 방법. 기밀성을 달성하기 위해 일종의 비밀 데이터인 키(key)가 필요하며, 키 없이는 복호화를 수행할 수 없음.
+
+Hashing은 데이터를 해시 함수를 사용하여 해시 값으로 변환하는 과정. 한번 해시된 데이터는 복원할 수 없음. 임의의 해시 결과 값을 비교했을 때, 그 값이 같다면 원본 값이 일치한다는 것을 검증할 수 있음.
