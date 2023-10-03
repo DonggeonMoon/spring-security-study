@@ -241,10 +241,34 @@ Spring Boot가 아닌 스프링 프로젝트에서는 웹 시큐리티를 활성
 Spring Boot 애플리케이션에서는 자동으로 웹 시큐리티를 활성화함
 
 ## PasswordEncoder
+```mermaid
+classDiagram
+    class PasswordEncoder
+    PasswordEncoder : encode(CharSequence raw Password)
+    PasswordEncoder : matches(CharSecqunece rawPassword, String encodedPassword)
+    PasswordEncoder : upgradeEncoding(Stirng encodedPassword)
+```
 비밀번호를 암호화하지 않고 평문으로 저장하는 것은 무결성, 기밀성에 위배
 
 * NoOpPasswordEncoder
   * 비밀번호를 암호화하지 않는 PasswordEncoder. 실무에서 사용해서는 안 됨.
+* ~~StandardPasswordEncoder~~
+  * Deprecated. 안전하지 않음.
+  * 레거시 애플리케이션들을 지원하기 위해서만 사용
+  * SHA-256 해싱 알고리즘, 랜덤 salt 값 사용
+  * 보안성과 다른 언어와의 상호운용성을 위해 다른 PasswordEncoder 사용 권장
+* Pbkdf2PasswordEncoder
+  * 과거에는 안전성을 인정받았으나 프로세서 성능 발전으로 현재는 안전하지 않음
+* BCryptPasswordEncoder
+  * 1999년 고안된 BCrypt 해싱 알고리즘 사용
+  * round 수를 늘릴수록 더 많은 연산 처리 능력 필요
+* SCryptPasswordEncoder
+  * BCryptPasswordEncoder 보다 발전된 형태
+  * 해킹 위해서는 더 많은 연산 처리 능력과 메모리 모두 필요 
+* Argon2PasswordEncoder
+  * 가장 최신 해싱 알고리즘
+  * 해킹 위해서는 연산 처리능력, 메모리, 다중 스레드가 요구됨
+  * 해킹을 위해서 더 많은 시간이 소모되는 만큼, 애플리케이션 동작 시(가입, 로그인 등)에도 시간 소요 큼
 
 ## Encoding vs. Encryption vs. Hashing
 Encoding은 단순히 데이터를 다른 형태로 변환하는 것. 암호화와는 관련이 없으며 보안 목적으로 사용되지 않음.
@@ -253,3 +277,20 @@ ex) ASCII, BASE64, Unicode
 Encryption은 기밀성을 보장하기 위한 데이터 변환 방법. 기밀성을 달성하기 위해 일종의 비밀 데이터인 키(key)가 필요하며, 키 없이는 복호화를 수행할 수 없음.
 
 Hashing은 데이터를 해시 함수를 사용하여 해시 값으로 변환하는 과정. 한번 해시된 데이터는 복원할 수 없음. 임의의 해시 결과 값을 비교했을 때, 그 값이 같다면 원본 값이 일치한다는 것을 검증할 수 있음.
+
+## BCryptPasswordEncoder
+* version - BCrypt 버전. 2a, 2b, 2y가 있음.
+* strength - 로그 자릿수. 4 ~ 31 사이의 정수
+* random - salt로 사용할 SecureRandom 객체(난수)
+
+## AuthenticationProvider
+```mermaid
+classDiagram
+    class AuthenticationProvider
+    AuthenticationProvider : authenticate(Authentication authentication)
+    AuthenticationProvider : supports(Class<?> authentication)
+```
+여러 인증 수단을 지원하기 위해 여러 AuthenticationProvider 사용 가능
+* username, password 사용
+* OAuth 2.0 인증 사용
+* OTP 인증 사용
