@@ -294,3 +294,100 @@ classDiagram
 * username, password 사용
 * OAuth 2.0 인증 사용
 * OTP 인증 사용
+
+## CORS & CSRF
+CORS는 클라이언트 브라우저에서 실행되는 스크립트가 다른 출처의 리소스와 상호작용할 수 있도록 하는 프로토콜.
+
+W3C가 제정한 규약이며 대다수의 브라우저들에 구현되어 있음
+
+CORS는 보안 위협이나 공격 방법이 아니라 다른 출처 간의 데이터 공유 및 통신을 막기 위한 브라우저의 기본적인 방어 수단이다.
+
+여기서 다른 출처의 리소스란 URL의 스킴, 도메인, 포트 중 하나라도 다른 리소스를 말한다.
+
+브라우저에서는 출처가 다른 리소스 간의 통신을 제한하므로(Same Origin Policy, SOP), 스프링 애플리케이션 교차 출처 간 통신을 위해서는 다음의 방법을 사용할 수 있음
+
+* @CrossOrigin 사용
+  * `@CrossOrigin(orgin = "*")`: 모든 출처를 허용
+  * `@CrossOrigin(orgin = "http://localhost:4200")`: 제시된 출처만 허용
+* 전역적으로 허용하기 위해서는 security 설정 변경
+```java
+public class ProjectSecurityConfig {
+    //...
+    @Bean
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(requests -> requests.requestMatchers(
+                                "/myAccount",
+                                "/myBalance",
+                                "/myLoans",
+                                "/myCards"
+                        ).authenticated()
+                //...
+                )
+                .cors(httpSecurityCorsConfigurer -> {
+                    httpSecurityCorsConfigurer.configurationSource(request -> {
+                        CorsConfiguration corsConfiguration = new CorsConfiguration();
+                        corsConfiguration.setAllowedOrigins(List.of("http://localhost:4200"));
+                        corsConfiguration.setAllowedMethods(List.of("*"));
+                        corsConfiguration.setAllowCredentials(true);
+                        corsConfiguration.setAllowedHeaders(List.of("*"));
+                        corsConfiguration.setMaxAge(3600L);
+                        return corsConfiguration;
+                    });
+                });
+        return http.build();
+    }
+}
+```
+
+CSRF(Cross-Site Request Forgery)는 CORS와 다르게 보안 공격임
+
+사용자의 신원 정보를 직접 훔치는 것이 아니라 사용자로 하여금 특정 행위를 수행하도록 유도함
+
+ex) 웹 사이트에 로그인된 상태에서 사용자가 외부 링크 클릭 시 로그인된 웹사이트의 보안 필요 동작을 수행을 하게 됨
+
+기본적으로 Spring Security는 CSRF 보호 기능을 제공하며 POST나 PUT 연산 등 DB 삽입 또는 수정 시 적용됨
+
+해결책은 로그인 시에 임의로 생성된 CSRF 토큰을 주고 요청 발생 시에 토큰을 검증함
+
+Spring Security에서 CSRF를 실무에서 비활성화하는 것은 지양해야 함
+
+```java
+public class ProjectSecurityConfig {
+    //...
+    @Bean
+    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+        requestHandler.setCsrfRequestAttributeName("_csrf");
+
+        http.authorizeHttpRequests(requests -> requests.requestMatchers(
+                        "/myAccount",
+                        "/myBalance",
+                        "/myLoans",
+                        "/myCards"
+                ).authenticated()
+                 //...
+                )
+                .csrf(httpSecurityCsrfConfigurer -> {
+                    httpSecurityCsrfConfigurer.ignoringRequestMatchers("/contact", "/register");
+                    httpSecurityCsrfConfigurer.csrfTokenRequestHandler(requestHandler)
+                            .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+                });
+      return http.build();
+    }
+}
+```
+
+### OncePerRequestFilter의 구현
+로그인 이후에 CSRF 토큰 값(쿠키와 헤더 값)을 UI 애플리케이션으로 보내야 함 
+
+이때 OncePerRequestFilter 구현체에서 쿠키 없이 헤더에만 토큰 보내면 Spring Security가 자동으로 쿠키 생성해줌
+
+`.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)`을 csrf() 메서드 뒤에 추가
+
+```text
+.securityContext(httpSecuritySecurityContextConfigurer ->
+                        httpSecuritySecurityContextConfigurer.requireExplicitSave(false))
+.sessionManagement(httpSecuritySessionManagementConfigurer ->
+        httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+```
+위 코드 추가해야 UI application에 JSESSIONID를 항상 처음 로그인 이후에 생성해달라고 해줌. 만약에 없으면 매 요청 시마다 로그인해야 함.
