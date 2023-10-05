@@ -24,16 +24,30 @@ public class ProjectSecurityConfig {
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName("_csrf");
 
-        http.securityContext(httpSecuritySecurityContextConfigurer ->
+        http/*.securityContext(httpSecuritySecurityContextConfigurer ->
                         httpSecuritySecurityContextConfigurer.requireExplicitSave(false))
                 .sessionManagement(httpSecuritySessionManagementConfigurer ->
-                        httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+                        httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))*/
+                .sessionManagement(httpSecuritySessionManagementConfigurer ->
+                        httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
+                        /*.requestMatchers("/myAccount")
+                        .hasAuthority("VIEWACCOUNT")
+                        .requestMatchers("/myBalance")
+                        .hasAnyAuthority("VIEWACCOUNT", "VIEWBALANCE")
+                        .requestMatchers("/myLoans")
+                        .hasAuthority("VIEWLOANS")
+                        .requestMatchers("/myCards")
+                        .hasAuthority("VIEWCARDS")*/
+                        .requestMatchers("/myAccount")
+                        .hasRole("USER")
+                        .requestMatchers("/myBalance")
+                        .hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/myLoans")
+                        .hasRole("USER")
+                        .requestMatchers("/myCards")
+                        .hasRole("USER")
                         .requestMatchers(
-                                "/myAccount",
-                                "/myBalance",
-                                "/myLoans",
-                                "/myCards",
                                 "/user"
                         )
                         .authenticated()
@@ -50,6 +64,7 @@ public class ProjectSecurityConfig {
                         corsConfiguration.setAllowedMethods(List.of("*"));
                         corsConfiguration.setAllowCredentials(true);
                         corsConfiguration.setAllowedHeaders(List.of("*"));
+                        corsConfiguration.setExposedHeaders(List.of("Authorization"));
                         corsConfiguration.setMaxAge(3600L);
                         return corsConfiguration;
                     });

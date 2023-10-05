@@ -1,5 +1,6 @@
 package com.securitystudy.bank.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 
 import java.util.Date;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -34,4 +36,12 @@ public class Customer {
     @Column(name = "create_dt")
     @Temporal(TemporalType.DATE)
     private Date createDt;
+
+    /*
+    customer 1
+    authority(주인) M 외래키 customer_id read only
+     */
+    @JsonIgnore
+    @OneToMany(mappedBy = "customer", fetch = FetchType.EAGER)
+    private Set<Authority> authorities;
 }

@@ -1,5 +1,6 @@
 package com.securitystudy.bank.config;
 
+import com.securitystudy.bank.model.Authority;
 import com.securitystudy.bank.model.Customer;
 import com.securitystudy.bank.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +14,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -29,15 +31,19 @@ public class BankUsernamePasswordAuthenticationProvider implements Authenticatio
         List<Customer> customers = customerRepository.findByEmail(username);
         if (!customers.isEmpty()) {
             if (passwordEncoder.matches(pwd, customers.get(0).getPwd())) {
-                List<GrantedAuthority> authorities = new ArrayList<>();
-                authorities.add(new SimpleGrantedAuthority(customers.get(0).getRole()));
-                return new UsernamePasswordAuthenticationToken(username, pwd, authorities);
+                return new UsernamePasswordAuthenticationToken(username, pwd, getGrantedAuthorities(customers.get(0).getAuthorities()));
             } else {
                 throw new BadCredentialsException("Invalid Password");
             }
         } else {
             throw new BadCredentialsException("No user registered with this details");
         }
+    }
+
+    private List<GrantedAuthority> getGrantedAuthorities(Set<Authority> authorities) {
+        return authorities.stream()
+                .map(authority -> new SimpleGrantedAuthority(authority.getName()))
+                .collect(Collectors.toList());
     }
 
     @Override
