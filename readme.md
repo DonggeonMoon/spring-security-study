@@ -177,9 +177,9 @@ public class ProjectSecurityConfig {
 ### UserDetails vs. Authentication
 ```mermaid
 classDiagram
-    UserDetails <.. User
-    Principal <.. Authentication
-    Authentication <.. UsernamePasswordAuthenticationToken
+    UserDetails <|.. User
+    Principal <|.. Authentication
+    Authentication <|.. UsernamePasswordAuthenticationToken
     
     class UsernamePasswordAuthenticationToken
     UsernamePasswordAuthenticationToken : getName()
@@ -391,3 +391,81 @@ public class ProjectSecurityConfig {
         httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
 ```
 위 코드 추가해야 UI application에 JSESSIONID를 항상 처음 로그인 이후에 생성해달라고 해줌. 만약에 없으면 매 요청 시마다 로그인해야 함.
+
+# authentication(AuthN) vs. authorization(AuthZ)
+authentication은 웹 애플리케이션에 접속하려는 사용자가 누구인지 식별하는 것
+
+실패 시 401 Unauthorized 에러 응답
+
+authorization은 "인증 이후" 특정 사용자가 가진 권한이 무엇인지 확인하는 것
+
+실패시 403 Forbidden 에러 응답
+
+Spring Security에서는 authority, role로 구분함
+
+```mermaid
+classDiagram
+    GrantedAuthority <|.. SimpleGrantedAuthority
+    class GrantedAuthority
+    GrantedAuthority : getAuthority()
+    class SimpleGrantedAuthority
+    SimpleGrantedAuthority : -role
+```
+
+Authority 생성 시 role 필요
+
+## Authority 설정
+RequestMatcher에 다음 메서드 사용
+* hasAuthority() - 하나의 authority를 받음. 제시된 authority가 있어야 엔드포인트 통과 가능.
+* hasAnyAuthority() - 여러 개의 authority를 받음. 제시된 authority 중 하나라도 있으면 엔드포인트 통과 가능.
+* access() - SpEL 사용 사용하여 복잡한 규칙 사용 가능
+
+## authority vs. role
+authority는 하나의 권한이나 행위를 뜻함(fine-grained)
+
+role은 권한이나 행위의 묶음임(coarse-grained)
+
+Spring Security에서는 authority와 role 모두 grated authority 인터페이스로 표현하지만 role은 특별히 `ROLE_` 접두어를 붙여야 함
+
+## Role 설정
+RequestMatcher에 다음 메서드 사용. 사용 시에는 `ROLE_` 접두어를 빼고 입력해야 함.
+* hasRole() - 하나의 role을 받음. 제시된 role이 있어야 엔드포인트 통과 가능.
+* hasAnyRole() - 여러 개의 role을 받음. 제시된 role 중 하나라도 있으면 엔드포인트 통과 가능.
+* access() - SpEL 사용 사용하여 복잡한 규칙 사용 가능
+
+## 토큰 사용 시 이점
+credentials을 노출하지 않아도 됨
+
+쉽게 만료 시킬 수 있음(해킹 또는 수상한 활동 발생 시)
+
+사용자 관련 정보 (role, authority 등)
+
+다른 서버나 환경에서 같은 토큰을 재사용할 수 있음
+
+무상태성 및 확장 가능성 - 세션 상태에 대한 필요가 없으면서 토큰이 사용자를 식별할 수 있는 정보를 갖고 있기 때문에, 로드밸런서 사용 시 다른 서버에서도 인증 가능
+
+## JWT
+기존의 JSESSIONID 토큰은 임으로 생성된 문자열일뿐 아무런 사용자 데이터를 제공하지 못함
+
+JWT(Json Web Token)은 내부적으로 사용자 정보를 JSON 형태로 저장함
+
+JWT는 header, payload, signature로 구성됨(각각은 '.'으로 구분됨)
+
+Header는 메타데이터(알고리즘, 타입, 포맷 등)를 저장
+
+모든 JWT의 데이터는 평문으로 저장되지 않음
+
+header는 Base64로 인코딩하도록 권장됨
+
+payload(또는 body)는 사용자 정보가 저장되며 그 내용에는 제한이 없음. 하지만 내용은 가능한 최소화해야 함
+
+payload 역시 Base64로 인코딩됨
+
+header와 payload는 필수 사항이지만 signature는 그렇지 않음
+
+signature가 있으면 다른 사람이 JWT를 위조했을 때 쉽게 발견할 수 있음
+
+signature는 JWT를 생성할 때마다 수행되는 서명이며, 인코딩된 header와 payload를 사용하여 생성한 해시 값임.(HMAC-SHA-256 등 사용)
+
+JWT 토큰을 DB에 저장하지 않고도 JWT 토큰이 위조되지 않았는지 검증 가능
+
