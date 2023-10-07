@@ -433,6 +433,38 @@ RequestMatcher에 다음 메서드 사용. 사용 시에는 `ROLE_` 접두어를
 * hasAnyRole() - 여러 개의 role을 받음. 제시된 role 중 하나라도 있으면 엔드포인트 통과 가능.
 * access() - SpEL 사용 사용하여 복잡한 규칙 사용 가능
 
+## Custom Filter
+입력 검증, 추적, 감사, 보고, IP 주소 로깅, 암복호화, OTP 멀티 팩터 인증 등 보안 이슈 처리가 필요할 때 스프링 시큐리티의 HTTP 필터를 사용할 수 있음
+
+필터는 스프링 시큐리티가 사용하는 중요한 서블릿 개념임
+
+* 필터 확인하기 위해 보안 로그 활성화 - 실무에서 사용 금지
+  * @EnableWebSecurity(debug = true)
+  * application.propterties
+    * logging.leve.org.springframework.securityWebFilterChainProxy=DEBUG
+
+* 시큐리티 필터 체인 내 기본 활성 필터 목록
+  * DisableEncodeUrlFilter
+  * WebAsyncManagerIntegrationFilter
+  * SecurityContextHolderFilter
+  * HeaderWriterFilter
+  * CorsFilter
+  * CsrfFilter
+  * LogoutFilter
+  * UsernamePasswordAuthenticationFilter
+  * DefaultLoginPageGeneratingFilter
+  * DefaultLogoutPageGeneratingFilter
+  * BasicAuthenticationFilter
+  * RequestCacheAwareFilter
+  * SecurityContextHolderAwareRequestFilter
+  * AnonymousAuthenticationFilter
+  * SessionManagementFilter
+  * ExceptionTranslationFilter
+  * FilterSecurityInterceptor
+
+FilterChainProxy 내부 클래스인 VirtualFilterChain의 doFilter()가 활성화된 필터들을 순회하면서 로직을 실행함
+
+
 ## 토큰 사용 시 이점
 credentials을 노출하지 않아도 됨
 
@@ -467,5 +499,5 @@ signature가 있으면 다른 사람이 JWT를 위조했을 때 쉽게 발견할
 
 signature는 JWT를 생성할 때마다 수행되는 서명이며, 인코딩된 header와 payload를 사용하여 생성한 해시 값임.(HMAC-SHA-256 등 사용)
 
-JWT 토큰을 DB에 저장하지 않고도 JWT 토큰이 위조되지 않았는지 검증 가능
+JWT 토큰을 저장소에 저장하지 않고도 JWT 토큰이 위조되지 않았는지 검증 가능
 
