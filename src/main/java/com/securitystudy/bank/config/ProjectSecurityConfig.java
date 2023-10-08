@@ -1,6 +1,6 @@
 package com.securitystudy.bank.config;
 
-import com.securitystudy.bank.filter.CsrfCookieFilter;
+import com.securitystudy.bank.filter.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -76,7 +76,13 @@ public class ProjectSecurityConfig {
                     httpSecurityCsrfConfigurer.csrfTokenRequestHandler(requestHandler)
                             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                     ;
-                }).addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                })
+                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
+                .addFilterAt(new AuthoritiesLoggingAtFilter(), BasicAuthenticationFilter.class)
+                .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
+                .addFilterAfter(new JwtTokenGeneratorFilter(), BasicAuthenticationFilter.class)
+                .addFilterBefore(new JwtTokenValidatorFilter(), BasicAuthenticationFilter.class)
                 .formLogin(withDefaults())
                 .httpBasic(withDefaults());
         return http.build();
