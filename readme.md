@@ -19,7 +19,7 @@ spring security에 대해 공부한 내용을 정리합니다.
 title: Spring Security Internal Flow
 ---
 graph LR
-    1[🖥 User Entered\nCredentials] -->|1|2[Spring Security\nFilters\n]
+    1[User Entered\nCredentials] -->|1|2[Spring Security\nFilters\n]
     2 -->|2|3[Authentication]
     2 -->|9|4[Spring context]
     2 -->|3|5[Authentication Manager]
