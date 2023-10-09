@@ -20,15 +20,15 @@ title: Spring Security Internal Flow
 ---
 graph LR
     1[🖥 User Entered\nCredentials] -->|1|2[Spring Security\nFilters\n]
-2 -->|2|3[Authentication]
-2 -->|9|4[Spring context]
-2 -->|3|5[Authentication Manager]
-5 -->|4|6[Authentication Providers]
-6 -->|5|7[UserDetailsManager, UserDetailsService]
-6 -->|6|8[Password Encoder]
-6 -->|7|5
-5 -->|8|2
-2 -->|10|1
+    2 -->|2|3[Authentication]
+    2 -->|9|4[Spring context]
+    2 -->|3|5[Authentication Manager]
+    5 -->|4|6[Authentication Providers]
+    6 -->|5|7[UserDetailsManager, UserDetailsService]
+    6 -->|6|8[Password Encoder]
+    6 -->|7|5
+    5 -->|8|2
+    2 -->|10|1
 ```
 
 ## 스프링 시큐리티 필터
