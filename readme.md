@@ -619,3 +619,51 @@ OncePerRequestFilter를 확장하여 구현
 Jwt 빌더를 이용해 JWT 토큰을 생성하고 응답 헤더 Authorization에 토큰을 넣어 응답
 
 URL `/user`에만 적용하도록 않도록 `shouldNotFilter()` 메서드 오버라이드
+
+
+## 메서드 수준 보안
+스프링 시큐리티는 authorization을 API 경로나 URL뿐만 아니라 메서드 수준에 적용할 수 있음
+
+메서드 수준 보안은 @EnableMethodSecurity 애너테이션을 통해 활성화함
+
+* 호출 authorization
+  * 사용자의 role, authority에 따라 메서드를 호출할 수 있는지 검증
+* authorization 필터링
+  * 메서드가 받을 수 있는 매개변수와 호출자가 메서드 로직 실행을 통해 리턴받을 수 있는 값인지 검증
+
+메서드 수준 보안은 항상 2차 보안으로서만 작동함. 그렇기에 보안 수준을 향상시킬 수 있음.
+
+스프링 시큐리티는 authorization규칙을 설정하기 위해 AOP의 애스펙트와 메서드 호출 사이의 인터셉트를 사용함
+
+스프링이 제공하는 메서드 수준 보안의 3가지 스타일 옵션
+* prePostEnabled 프로퍼티 - @PreAuthorize & @PostAuthorize 사용 가능 설정
+* securedEnabled 프로퍼티 - @Secured 사용 가능 설정
+* jsr250Enabled 프로퍼티 - @RoleAllowed 사용 가능 설정
+
+```java
+@Configuration
+@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
+public class ProjectSecurityConfig {
+  //...
+}
+
+```
+
+### @PreAuthorize, @PostAuthorize
+* @PreAuthorize
+  * 메서드 실행 전 사용자가 요구 조건 충족하는지
+* @PostAuthorize
+  * 메서드 실행 후 사용자가 요구 조건 충족하는지'
+
+authorization 규칙 작성을 위한 메서드
+* `hasAuthority()`, `hasAnyAuthority()`, `hasRole()`, `hasAnyRole()` 등
+* spEL 사용 가능 ex) `# username == authentication.principal.username`
+* @Secured, @RoleAllowed에서는 사용 불가
+* 조건이 복잡할 경우 PermissionEvaluator 인터페이스 구현하여 사용할 수도 있음
+  * 애너테이션에는 `hasPermission()` 메서드 사용
+* 보통 @PreAuthorize 애너테이션 사용
+
+### @PreFilter, @PostFilter
+주고 받는 매개변수가 authorization 규칙을 준수하는지 확인하도록 하려면 @PreFilter를 사용해야 됨
+
+메서드 매개 변수는 항상 Collection 타입이어야 함
