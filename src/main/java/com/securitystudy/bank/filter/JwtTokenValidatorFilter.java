@@ -42,7 +42,7 @@ public class JwtTokenValidatorFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(au);
             } catch (Exception e) {
-                throw new BCException("Invalid Token receive");
+                throw new BCException("Invalid Token received");
             }
         }
         filterChain.doFilter(request, response);

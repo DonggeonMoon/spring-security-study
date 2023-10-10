@@ -10,6 +10,6 @@ spring:
       hibernate:
         format_sql: true
 
-logging:
-  level:
-    org.springframework.security.web.FilterChainProxy: DEBUG
+#logging:
+#  level:
+#    org.springframework.security.web.FilterChainProxy: DEBUG

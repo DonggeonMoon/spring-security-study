@@ -19,7 +19,7 @@ import java.util.List;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
-@EnableWebSecurity(debug = true)
+//@EnableWebSecurity(debug = true)
 public class ProjectSecurityConfig {
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -72,10 +72,9 @@ public class ProjectSecurityConfig {
                     });
                 })
                 .csrf(httpSecurityCsrfConfigurer -> {
-                    httpSecurityCsrfConfigurer.ignoringRequestMatchers("/register");
+                    httpSecurityCsrfConfigurer.ignoringRequestMatchers("/contact", "/register");
                     httpSecurityCsrfConfigurer.csrfTokenRequestHandler(requestHandler)
-                            .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                    ;
+                            .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
                 })
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
                 .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
