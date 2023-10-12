@@ -667,3 +667,161 @@ authorization 규칙 작성을 위한 메서드
 주고 받는 매개변수가 authorization 규칙을 준수하는지 확인하도록 하려면 @PreFilter를 사용해야 됨
 
 메서드 매개 변수는 항상 Collection 타입이어야 함
+
+## OAuth 2
+authentication과 authorization을 위한 산업 표준
+
+여러 서비스에서 사용자 비밀 정보(비밀번호 등) 노출 없이 하나의 인증 절차로 인증을 완료할 수 있음
+
+OAuth는 분리된 인증 서버를 유지하도록 권장
+
+고객들이 웹 서비스들을 하나의 실체로 인식할 경우(은행: 대출, 카드, 계좌 등), 한 번의 인증으로 모든 서비스 이용 가능
+
+OAuth 2.0은 어떤 애플리케이션에 다른 애플리케이션의 데이터에 접근할 수 있는 권한을 주는 보안 표준이다
+
+권한을 주고 동의하는 단계를 authorization, 혹은 위임된 authorization이라고 하며, 애플리케이션에 데이터 접근 권한을 주거나 권한들을 사용하는 기능을 비밀번호 전송 없이 가능하게 해줌
+
+### 권한 부여 타입(Grant Type)
+* Authentication Code
+* PKCE
+* Client Credentials
+* Device Code - Apple TV, Android TV, 키보드 등 기기 인증에만 쓰임
+* Refresh Token
+* Implicit Flow(Legacy)
+* Password Grant(Legacy)
+
+OAuth 2.1은 2.0보다 좀 더 단순해짐
+
+### OAuth 용어
+* resource owner - 엔드 유저
+* client - resource owner로부터 권한을 받아서 사용하는 웹 서비스, 서드 파티 앱들
+* authorization server - resource owner를 알고 있는 서버. resource owner에게 하나의 계정을 부여함.
+* resource server - client가 원하는 API, 서비스를 제공하는 서버. 보통은 authorization server와 resource 서버가 분리되어 있지만 작은 서비스에서는 합쳐져 사용하기도 함
+* scopes - client가 원하는 작은 권한 단위
+
+```mermaid
+sequenceDiagram
+    User -) Client: 1. I want to access my resource
+    Client -) User: 2. Tell the Auth Server that you are fine to do this action
+    User -) Auth Server: 3. Hello Auth Server, plz allow the client to access my resources. Here are my credentials to prove my identity
+    Auth Server -) Client: 4. Hey Client, the user allowed you to access his resources. Here is authZ code
+    Client -) Auth Server: 5. Here are my client credentials, authZ code. Plz provide me an access token(AT)
+    Auth Server -) Client: 6. Here is the AT from Auth server 
+    Client -) Resource Server: 7. Hey Resource Server, I want to access the user resources. Here is the AT from authZ server
+    Resource Server -) User: 8. Hey Client, your token is validated successfully. Here are the resource requested
+```
+
+2, 3번 단계에서 Client가 Auth Server로 요청을 보낼 때, 엔드포인트는 다음을 포함해야 함
+* client_id
+* redirect_url
+* scope
+* state - CSRF 공격 방지를 위한 CSRF 토큰 
+* response_type - 값이 `code`인 경우 authZ code 부여를 진행하겠다는 것을 뜻함
+
+5번 단계에서 Client가 Auth Server로부터 auth code를 받은 후에 Client 다음 값들과 같이 토큰을 Auth Server에 요청함
+* code - auth code
+* client_id & client_secret - client의 credentail
+* grant_type - 사용된 grant type의 종류. 이 경우에는 `authorization_code`.
+* redirect_id
+
+Okta가 OAuth 인수
+
+Okta의 제품을 사용하면 쉽게 인증 서버 구축 가능
+
+https://www.oauth.com/playground 에서 OAuth 2.0 프로세스 체험 가능
+
+### Implicit Flow Grant Type
+보안 상의 이유로 deprecated 되고 2.1 버전에서 삭제됨 -> 실무 사용 지양
+
+```mermaid
+sequenceDiagram
+    User -) Client: 1. I want to access my resources
+    Client -) User: 2. Tell the Auth server that the Auth Server that you are fine to do this action
+    User -) Auth Server: 3. Hello Auth Server, plz allow the client to access my resources. Here are my credentials to prove my identity
+    Auth Server -) Client: 4. Hey Client, User allowed you to access his resources. Here credentials to prove my identity
+    Client -) Resource Server: 5. Hey Resource Server, I want to access the user resources. Here is the access token from authZ server.
+    Resource Server -) Client: 6. Hey Client, your token is validated successfully. Here are the resources you requested.
+```
+
+Implicit Flow에서는 auth code 거치지 않고 바로 access token 부여
+
+아래 정보만 보내면 됨
+* client_id
+* redirect_url
+* scope
+* state
+* response_type
+
+* 문제점
+  * client_id & client_secret을 검증하지 않기 때문에 누구나 client임을 흉내낼 수 있음
+  * access token이 GET 요청으로 전송됨
+
+### Password Grant/Resource Owner Credentials Grant Type
+보안 상의 이유로 deprecated 되고 2.0 버전에서 삭제됨 -> 실무 사용 지양
+
+써야 한다면 반드시 client, authorization server, resource server가 동일 조직이 관리하는 경우에만 사용할 것
+
+```mermaid
+sequenceDiagram
+    User -) Client: 1. I want to access my resources Heere are my credentials
+    Client  -) Auth Server: 2. Hello Auth Server, an user want to access his resources. Here are the credentials of the User
+    Auth Server -) Client: 3. Hey Client, the credentials provided are correct. Here is the token to access the user resources
+    Client -) Resource Server: 4. Hey Resource Server, I want to access the user resources. Here is the access token from authZ server
+    Resource Server -) Client: 5. Hey Client, your token is validated successfully. Here are the resources you requested
+```
+
+* 문제점
+  * resource owner가 자신의 credentials를 공유해야 함
+
+2번 단계에서 클라이언트가 Auth Server에 요청을 보낼 때, 엔드포인트가 다음의 정보를 보내야 함
+* client_id & client_secret
+* scope
+* username & password
+* grant_type
+
+### Client Credentials Grant Type
+end user(resource owner)가 참여하지 않고 2개의 애플리케이션이 서로 통신해야 할 때
+
+A 조직 소속의 client와 B 조직 소속의 auth server와 resource server 사이에서만 데이터를 공유하고 싶을 때 사용
+
+OAuth2에서 가장 간단한 grant type flow
+
+```mermaid
+sequenceDiagram
+    Client -) Auth Server: 1. I want to access protected resources. Here are my client credentials. No user involved in this
+    Auth server -) Client: 2. Hey Client, the credentials provided is correct Here is the access token(AT) to access the protected resources.
+    Client -) Resource Server: 3. Hey Resource server, I want to access protected resources. Here is the AT issued by Auth server.
+    Resource server -) Client: 4. Hey Client, your token is validated successfully. Here are the resources you requested.
+```
+
+1번 단계에서 클라이언트가 Auth Server에 요청을 보낼 때, 엔드포인트가 다음의 정보를 보내야 함
+* client_id & client_secret
+* scope
+* grant_type
+
+### Refresh Token Grant Type Flow
+access token(AT), refresh token(RT)을 발급
+
+RT로 다른 grant type flow를 시작할 수 있음
+
+RT가 유효하면 신선한 AT(새로운 만료 시간이 설정된 토큰) 발급
+
+사용자에게 매번 로그인 하라고 할 필요없이 auth server가 발급한 RT를 사용하여 재인증 할 수 있음
+
+access token이 영원히 만료되지 않도록 만들 수 있지만 권장되지 않음
+
+```mermaid
+sequenceDiagram
+    Client -) Resource Server: 1. I want to access protected resources of the user. Here is the access token(AT) received in the initial user login
+    Resource Server -) Client: 2. The AT is expired. I am throwing 403 forbidden error. Sorry!
+    Client -) Auth Server: 3. Hey Auth Server, I need a new AT for the user. Here is the refresh token of the user
+    Auth Server -) Client: 4. Refresh token(RT) is valid. Here is a new AT and new RT
+    Client -) Resource Server: 5. Hey Resource Server, I want to access a  protected resources. Here is the AT issued by Auth Server
+    Resource Server -) Client: 6. Hey Client, Your token is validated successfully. Here are the resources you requested 
+```
+
+3번 단계에서 클라이언트가 Auth Server에 요청을 보낼 때, 엔드포인트가 다음의 정보를 보내야 함
+* client_id & client secret
+* refresh_token
+* scope
+* grant_type
