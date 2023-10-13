@@ -825,3 +825,76 @@ sequenceDiagram
 * refresh_token
 * scope
 * grant_type
+
+### 인증서버의 토큰 검증 방법
+1. authorization server와 resource server와 직접 API 통신
+   - client의 요청이 있을 때마다 resource 서버가 authorization server에 요청해야 하므로 불필요한 트래픽 발생
+2. authorization server와 resource가 동일한 DB 사용
+3. resource server가 시작 시에 authorization server와 연결하고 공개 인증서를 받아와 공개키로 AT를 검증
+   - resource server와 authorization server가 지속적으로 연결될 필요 없음
+   - 가장 권장되는 방법이고 가장 자주 사용되는 방법
+
+## OpenID Connect
+OpenID Connect는 OAuth 2.0 프레임워크의 최상부에 위치한 프로토콜
+
+OAuth 2.0이 scope를 가지는 access token으로 인증을 제공한다면, OpenID Conenct는 신원에 대한 정보(email, 주소 등 개인 정보)와 claim들을 포함한 새 ID 토큰을 도입함
+
+OpenID Connect는 ID 토큰을 이용해 애플리케이션의 신원 정보 공유에 대한 표준을 제공함
+
+OAuth와 OpenID Connect가 다른 점은 처음 요청에 openid의 특정 scope가 사용되고, 마지막 교환 시에 클라이언트가 액세스 토큰과 ID 토큰 두 가지를 받는다는 것
+
+OAuth 프레임워크에서 OpenID connect가 authN, OAuth 2.0이 authZ를 담당
+
+* OpenID Connect의 중요성
+  * 모든 애플리케이션에서 신원은 중요함
+  * OAuth 2.0은 현대적 인증의 핵심이지만 인증 컴포넌트가 부족함
+  * OAuth 2.0의 최상단에 OpenID Connect를 구현함으로써 IAM(Identity Access Management) 전략이 완성됨
+  * 더 많은 애플리케이션이 서로 연결되고 인터넷에 더 많은 신원들이 생성되면서 이 신원들을 공유하는 것에 대한 수요가 증가함
+  * 애플리케이션들은 OpenID connect과 함께 신원을 쉽고 표준화된 방법으로 공유가 가능해짐
+
+OIDC가 openid, profile, email, 주소를 표준화함
+
+ID 토큰은 JWT를 사용
+
+OIDC 표준은 "/userinfo" 엔드포인트에서 신원 정보를 조회할 수 있음
+
+
+## OAuth 구현하기
+
+```java
+@Configuration
+public class SpringSecurityOauth2GitHubConfig {
+    @Bean
+    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests((requests)->requests.anyRequest().authenticated())
+                .oauth2Login(Customizer.withDefaults());
+        return http.build();
+    }
+
+    @Bean
+    public ClientRegistrationRepository clientRepository() {
+        return new InMemoryClientRegistrationRepository(clientRegistration());
+    }
+
+    private ClientRegistration clientRegistration() {
+		return CommonOAuth2Provider.GITHUB.getBuilder("github").clientId("clientId")
+	           .clientSecret("clientSecret").build();
+	 }
+}
+```
+
+form 로그인은 더 이상 사용하지 않고 oauth2 로그인 방식을 사용함
+
+CommonOAuth2Provider에 설정된 주요 OAuth2 제공자들을 사용하여 ClientRegistration 객체를 생성하고 이를 바탕으로 ClientRegistrationRepository 빈을 등록한다.
+* application.properties 또는 application.yml에서 설정도 가능
+
+
+## Keycloak
+OAuth 자체는 프로토콜일뿐 구현체를 제공하지 않음
+
+구글, 페이스북, 깃허브는 자체적으로 authorization server를 가지고 있지만 대다수는 그렇지 않음
+
+Keycloak, Okta, ForgeRock Amazon Cognito 등 authorization server 제품들이 있음
+
+Keycloak은 오픈 소스, 무료이며 다운로드하여 쉽게 사용 가능. 안정적인 서비스와 다양한 기능 제공.
+
