@@ -9,6 +9,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  config:
+    import: file:.env[.properties]
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
 
 #logging:
 #  level:
