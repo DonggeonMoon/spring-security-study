@@ -898,3 +898,24 @@ Keycloak, Okta, ForgeRock Amazon Cognito 등 authorization server 제품들이 �
 
 Keycloak은 오픈 소스, 무료이며 다운로드하여 쉽게 사용 가능. 안정적인 서비스와 다양한 기능 제공.
 
+## Keycloak 인증 서버 사용하기
+1. Keycloak 서버 다운로드 후 admin 계정 생성
+2. 새 realm 생성
+
+## Keycloak 인증서버 사용하여 OAuth2 애플리케이션 구현하기
+
+```mermaid
+flowchart LR
+  ui["UI app/Postman\n(App or Rest API Client)"] -->|1| keycloak["Keycloak(Auth Server)"]
+  ui -->|2| resourceServer[Resource Server]
+  resourceServer -->|3| keycloak
+  resourceServer -->|4| ui
+```
+
+1. 클라이언트 앱이나 REST API 클라이언트가 리소스를 Resource Server에서 가져오려면 Keycloak에서 access token(AT)을 받아와야 함
+2. 클라이언트 앱이 리소스에 접근하기 위해 가져온 AT로 Resource Server에 연결하여 
+3. Resource Server는 AT의 유효성을 검증하기 위해 인증 서버(Keycloak)에 연결
+4. AT가 유효하면, Resource Server는 클라이언트 앱에 리소스를 응답해줌
+
+## PKCE(Proof Key for Code Exchange)
+자바스크립트로는 
