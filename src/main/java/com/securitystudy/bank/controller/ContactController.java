@@ -21,13 +21,13 @@ public class ContactController {
 
     @PostMapping("/contact")
     //@PreFilter("filterObject.contactName != 'Test'")
-    @PostFilter("filterObject.contactName != 'Test'")
+    //@PostFilter("filterObject.contactName != 'Test'")
     public List<Contact> saveContactInquiryDetails(@RequestBody List<Contact> contacts) {
         Contact contact = contacts.get(0);
         contact.setContactId(getServiceReqNumber());
         contact.setCreateDt(new Date(System.currentTimeMillis()));
         contact = contactRepository.save(contact);
-        List<Contact> returnContacts = new ArrayList();
+        List<Contact> returnContacts = new ArrayList<>();
         contacts.add(contact);
         return returnContacts;
     }

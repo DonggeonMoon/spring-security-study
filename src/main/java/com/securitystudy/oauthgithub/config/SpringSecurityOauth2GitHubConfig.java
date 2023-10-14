@@ -16,4 +16,14 @@ public class SpringSecurityOauth2GitHubConfig {
                 .oauth2Login(Customizer.withDefaults());
         return http.build();
     }
+
+    /*@Bean
+    public ClientRegistrationRepository clientRepository() {
+        return new InMemoryClientRegistrationRepository(clientRegistration());
+    }
+
+    private ClientRegistration clientRegistration() {
+        return CommonOAuth2Provider.GITHUB.getBuilder("github").clientId("clientId")
+                .clientSecret("clientSecret").build();
+    }*/
 }

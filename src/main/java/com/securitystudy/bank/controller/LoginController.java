@@ -16,9 +16,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LoginController {
     private final CustomerRepository customerRepository;
-    private final PasswordEncoder passwordEncoder;
+//    private final PasswordEncoder passwordEncoder;
 
-    @PostMapping("/register")
+    /*@PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestBody Customer customer) {
         Customer savedCustomer;
         ResponseEntity<String> response = null;
@@ -38,7 +38,7 @@ public class LoginController {
                     .body("An exception occured due to " + ex.getMessage());
         }
         return response;
-    }
+    }*/
 
     @RequestMapping("/user")
     public Customer getUserDetailsAfterLogin(Authentication authentication) {

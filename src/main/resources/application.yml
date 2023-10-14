@@ -18,6 +18,9 @@ spring:
           github:
             client-id: ${GITHUB_CLIENT_ID}
             client-secret: ${GITHUB_CLIENT_SECRET}
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8180/realms/bankdev/protocol/openid-connect/certs
 
 #logging:
 #  level:

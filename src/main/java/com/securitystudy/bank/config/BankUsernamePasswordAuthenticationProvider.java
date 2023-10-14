@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Component
+//@Component
+@Deprecated
 @RequiredArgsConstructor
 public class BankUsernamePasswordAuthenticationProvider implements AuthenticationProvider {
     private final CustomerRepository customerRepository;

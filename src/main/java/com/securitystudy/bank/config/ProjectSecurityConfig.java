@@ -1,13 +1,12 @@
 package com.securitystudy.bank.config;
 
-import com.securitystudy.bank.filter.*;
+import com.securitystudy.bank.filter.CsrfCookieFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -26,6 +25,9 @@ public class ProjectSecurityConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName("_csrf");
+
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
 
         http/*.securityContext(httpSecuritySecurityContextConfigurer ->
                         httpSecuritySecurityContextConfigurer.requireExplicitSave(false))
@@ -78,18 +80,25 @@ public class ProjectSecurityConfig {
                             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
                 })
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-                .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
+                /*.addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
                 .addFilterAt(new AuthoritiesLoggingAtFilter(), BasicAuthenticationFilter.class)
                 .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
                 .addFilterAfter(new JwtTokenGeneratorFilter(), BasicAuthenticationFilter.class)
-                .addFilterBefore(new JwtTokenValidatorFilter(), BasicAuthenticationFilter.class)
-                .formLogin(withDefaults())
-                .httpBasic(withDefaults());
+                .addFilterBefore(new JwtTokenValidatorFilter(), BasicAuthenticationFilter.class)*/
+                /*.formLogin(withDefaults())
+                .httpBasic(withDefaults());*/
+                .oauth2ResourceServer(
+                        httpSecurityOAuth2ResourceServerConfigurer ->
+                        httpSecurityOAuth2ResourceServerConfigurer
+                                .jwt(
+                                        jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter)
+                                )
+                        );
         return http.build();
     }
 
-    @Bean
+    /*@Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
+    }*/
 }
