@@ -1,10 +1,10 @@
 # spring-security-study
 
-spring security에 대해 공부한 내용을 정리합니다.
+Spring Security에 대해 공부한 내용을 정리합니다.
 
 ## 스프링 시큐리티를 쓰는 이유
 
-* 증가하는 보안 위협에 대해 프레임워크 사용만으로 대응이 가능
+* 증가하는 보안 위협에 대해 프레임워크 사용하는 것만으로도 대응이 가능
     * 해커들은 항상 침입할 준비를 하고 있고 보안 취약점은 매일 같이 갱신됨
     * 따라서 보안 영역은 어렵고 힘든 부분일 수밖에 없음
     * 보안에 대한 걱정은 프레임워크에 맡기고 비즈니스 로직에 집중할 수 있음
@@ -19,16 +19,16 @@ spring security에 대해 공부한 내용을 정리합니다.
 title: Spring Security Internal Flow
 ---
 graph LR
-    1[User Entered\nCredentials] -->|1|2[Spring Security\nFilters\n]
-    2 -->|2|3[Authentication]
-    2 -->|9|4[Spring context]
-    2 -->|3|5[Authentication Manager]
-    5 -->|4|6[Authentication Providers]
-    6 -->|5|7[UserDetailsManager, UserDetailsService]
-    6 -->|6|8[Password Encoder]
-    6 -->|7|5
-    5 -->|8|2
-    2 -->|10|1
+    1["🖥️ User Entered\nCredentials"] -->|1| 2[Spring Security\nFilters\n]
+    2 -->|2| 3[Authentication]
+    2 -->|9| 4[Spring context]
+    2 -->|3| 5[Authentication Manager]
+    5 -->|4| 6[Authentication Providers]
+    6 -->|5| 7[UserDetailsManager, UserDetailsService]
+    6 -->|6| 8[Password Encoder]
+    6 -->|7| 5
+    5 -->|8| 2
+    2 -->|10| 1
 ```
 
 ## 스프링 시큐리티 필터
@@ -52,7 +52,7 @@ graph LR
     * DaoAuthenticationProvider는 InMemoryUserDetailsManager(UserDetailsManager 구현체)를 사용하여 사용자 정보를 가져옴
         * `application.properties`에서 username과 password를 설정하면 in-memory에 로드됨
         * retreiveUser() 메서드가 로드된 username과 password를 바탕으로 UserDetails 객체를 생성해줌
-        * 이 UserDetails를 additionalAuthenticationChecks() 메서드에게 전달하고 이 메서드는 기본 PasswordEncdoder를 사용하여 일치하는지 확인함
+        * 이 UserDetails를 additionalAuthenticationChecks() 메서드에게 전달하고 이 메서드는 기본 PasswordEncoder를 사용하여 일치하는지 확인함
 
 ## 스프링 시큐리티 기본 필터 체인 구현하기
 
@@ -614,61 +614,68 @@ signature는 JWT를 생성할 때마다 수행되는 서명이며, 인코딩된 
 JWT 토큰을 저장소에 저장하지 않고도 JWT 토큰이 위조되지 않았는지 검증 가능
 
 ## JWT 토큰 예제
+
 OncePerRequestFilter를 확장하여 구현
 
 Jwt 빌더를 이용해 JWT 토큰을 생성하고 응답 헤더 Authorization에 토큰을 넣어 응답
 
 URL `/user`에만 적용하도록 않도록 `shouldNotFilter()` 메서드 오버라이드
 
-
 ## 메서드 수준 보안
+
 스프링 시큐리티는 authorization을 API 경로나 URL뿐만 아니라 메서드 수준에 적용할 수 있음
 
 메서드 수준 보안은 @EnableMethodSecurity 애너테이션을 통해 활성화함
 
 * 호출 authorization
-  * 사용자의 role, authority에 따라 메서드를 호출할 수 있는지 검증
+    * 사용자의 role, authority에 따라 메서드를 호출할 수 있는지 검증
 * authorization 필터링
-  * 메서드가 받을 수 있는 매개변수와 호출자가 메서드 로직 실행을 통해 리턴받을 수 있는 값인지 검증
+    * 메서드가 받을 수 있는 매개변수와 호출자가 메서드 로직 실행을 통해 리턴받을 수 있는 값인지 검증
 
 메서드 수준 보안은 항상 2차 보안으로서만 작동함. 그렇기에 보안 수준을 향상시킬 수 있음.
 
 스프링 시큐리티는 authorization규칙을 설정하기 위해 AOP의 애스펙트와 메서드 호출 사이의 인터셉트를 사용함
 
 스프링이 제공하는 메서드 수준 보안의 3가지 스타일 옵션
+
 * prePostEnabled 프로퍼티 - @PreAuthorize & @PostAuthorize 사용 가능 설정
 * securedEnabled 프로퍼티 - @Secured 사용 가능 설정
 * jsr250Enabled 프로퍼티 - @RoleAllowed 사용 가능 설정
 
 ```java
+
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 public class ProjectSecurityConfig {
-  //...
+    //...
 }
 
 ```
 
 ### @PreAuthorize, @PostAuthorize
+
 * @PreAuthorize
-  * 메서드 실행 전 사용자가 요구 조건 충족하는지
+    * 메서드 실행 전 사용자가 요구 조건 충족하는지
 * @PostAuthorize
-  * 메서드 실행 후 사용자가 요구 조건 충족하는지'
+    * 메서드 실행 후 사용자가 요구 조건 충족하는지'
 
 authorization 규칙 작성을 위한 메서드
+
 * `hasAuthority()`, `hasAnyAuthority()`, `hasRole()`, `hasAnyRole()` 등
 * spEL 사용 가능 ex) `# username == authentication.principal.username`
 * @Secured, @RoleAllowed에서는 사용 불가
 * 조건이 복잡할 경우 PermissionEvaluator 인터페이스 구현하여 사용할 수도 있음
-  * 애너테이션에는 `hasPermission()` 메서드 사용
+    * 애너테이션에는 `hasPermission()` 메서드 사용
 * 보통 @PreAuthorize 애너테이션 사용
 
 ### @PreFilter, @PostFilter
+
 주고 받는 매개변수가 authorization 규칙을 준수하는지 확인하도록 하려면 @PreFilter를 사용해야 됨
 
 메서드 매개 변수는 항상 Collection 타입이어야 함
 
 ## OAuth 2
+
 authentication과 authorization을 위한 산업 표준
 
 여러 서비스에서 사용자 비밀 정보(비밀번호 등) 노출 없이 하나의 인증 절차로 인증을 완료할 수 있음
@@ -682,6 +689,7 @@ OAuth 2.0은 어떤 애플리케이션에 다른 애플리케이션의 데이터
 권한을 주고 동의하는 단계를 authorization, 혹은 위임된 authorization이라고 하며, 애플리케이션에 데이터 접근 권한을 주거나 권한들을 사용하는 기능을 비밀번호 전송 없이 가능하게 해줌
 
 ### 권한 부여 타입(Grant Type)
+
 * Authentication Code
 * PKCE
 * Client Credentials
@@ -693,6 +701,7 @@ OAuth 2.0은 어떤 애플리케이션에 다른 애플리케이션의 데이터
 OAuth 2.1은 2.0보다 좀 더 단순해짐
 
 ### OAuth 용어
+
 * resource owner - 엔드 유저
 * client - resource owner로부터 권한을 받아서 사용하는 웹 서비스, 서드 파티 앱들
 * authorization server - resource owner를 알고 있는 서버. resource owner에게 하나의 계정을 부여함.
@@ -706,19 +715,21 @@ sequenceDiagram
     User -) Auth Server: 3. Hello Auth Server, plz allow the client to access my resources. Here are my credentials to prove my identity
     Auth Server -) Client: 4. Hey Client, the user allowed you to access his resources. Here is authZ code
     Client -) Auth Server: 5. Here are my client credentials, authZ code. Plz provide me an access token(AT)
-    Auth Server -) Client: 6. Here is the AT from Auth server 
+    Auth Server -) Client: 6. Here is the AT from Auth server
     Client -) Resource Server: 7. Hey Resource Server, I want to access the user resources. Here is the AT from authZ server
     Resource Server -) User: 8. Hey Client, your token is validated successfully. Here are the resource requested
 ```
 
 2, 3번 단계에서 Client가 Auth Server로 요청을 보낼 때, 엔드포인트는 다음을 포함해야 함
+
 * client_id
 * redirect_url
 * scope
-* state - CSRF 공격 방지를 위한 CSRF 토큰 
+* state - CSRF 공격 방지를 위한 CSRF 토큰
 * response_type - 값이 `code`인 경우 authZ code 부여를 진행하겠다는 것을 뜻함
 
 5번 단계에서 Client가 Auth Server로부터 auth code를 받은 후에 Client 다음 값들과 같이 토큰을 Auth Server에 요청함
+
 * code - auth code
 * client_id & client_secret - client의 credentail
 * grant_type - 사용된 grant type의 종류. 이 경우에는 `authorization_code`.
@@ -731,6 +742,7 @@ Okta의 제품을 사용하면 쉽게 인증 서버 구축 가능
 https://www.oauth.com/playground 에서 OAuth 2.0 프로세스 체험 가능
 
 ### Implicit Flow Grant Type
+
 보안 상의 이유로 deprecated 되고 2.1 버전에서 삭제됨 -> 실무 사용 지양
 
 ```mermaid
@@ -746,6 +758,7 @@ sequenceDiagram
 Implicit Flow에서는 auth code 거치지 않고 바로 access token 부여
 
 아래 정보만 보내면 됨
+
 * client_id
 * redirect_url
 * scope
@@ -753,10 +766,11 @@ Implicit Flow에서는 auth code 거치지 않고 바로 access token 부여
 * response_type
 
 * 문제점
-  * client_id & client_secret을 검증하지 않기 때문에 누구나 client임을 흉내낼 수 있음
-  * access token이 GET 요청으로 전송됨
+    * client_id & client_secret을 검증하지 않기 때문에 누구나 client임을 흉내낼 수 있음
+    * access token이 GET 요청으로 전송됨
 
 ### Password Grant/Resource Owner Credentials Grant Type
+
 보안 상의 이유로 deprecated 되고 2.0 버전에서 삭제됨 -> 실무 사용 지양
 
 써야 한다면 반드시 client, authorization server, resource server가 동일 조직이 관리하는 경우에만 사용할 것
@@ -764,22 +778,24 @@ Implicit Flow에서는 auth code 거치지 않고 바로 access token 부여
 ```mermaid
 sequenceDiagram
     User -) Client: 1. I want to access my resources Heere are my credentials
-    Client  -) Auth Server: 2. Hello Auth Server, an user want to access his resources. Here are the credentials of the User
+    Client -) Auth Server: 2. Hello Auth Server, an user want to access his resources. Here are the credentials of the User
     Auth Server -) Client: 3. Hey Client, the credentials provided are correct. Here is the token to access the user resources
     Client -) Resource Server: 4. Hey Resource Server, I want to access the user resources. Here is the access token from authZ server
     Resource Server -) Client: 5. Hey Client, your token is validated successfully. Here are the resources you requested
 ```
 
 * 문제점
-  * resource owner가 자신의 credentials를 공유해야 함
+    * resource owner가 자신의 credentials를 공유해야 함
 
 2번 단계에서 클라이언트가 Auth Server에 요청을 보낼 때, 엔드포인트가 다음의 정보를 보내야 함
+
 * client_id & client_secret
 * scope
 * username & password
 * grant_type
 
 ### Client Credentials Grant Type
+
 end user(resource owner)가 참여하지 않고 2개의 애플리케이션이 서로 통신해야 할 때
 
 A 조직 소속의 client와 B 조직 소속의 auth server와 resource server 사이에서만 데이터를 공유하고 싶을 때 사용
@@ -795,11 +811,13 @@ sequenceDiagram
 ```
 
 1번 단계에서 클라이언트가 Auth Server에 요청을 보낼 때, 엔드포인트가 다음의 정보를 보내야 함
+
 * client_id & client_secret
 * scope
 * grant_type
 
 ### Refresh Token Grant Type Flow
+
 access token(AT), refresh token(RT)을 발급
 
 RT로 다른 grant type flow를 시작할 수 있음
@@ -816,25 +834,28 @@ sequenceDiagram
     Resource Server -) Client: 2. The AT is expired. I am throwing 403 forbidden error. Sorry!
     Client -) Auth Server: 3. Hey Auth Server, I need a new AT for the user. Here is the refresh token of the user
     Auth Server -) Client: 4. Refresh token(RT) is valid. Here is a new AT and new RT
-    Client -) Resource Server: 5. Hey Resource Server, I want to access a  protected resources. Here is the AT issued by Auth Server
+    Client -) Resource Server: 5. Hey Resource Server, I want to access a protected resources. Here is the AT issued by Auth Server
     Resource Server -) Client: 6. Hey Client, Your token is validated successfully. Here are the resources you requested 
 ```
 
 3번 단계에서 클라이언트가 Auth Server에 요청을 보낼 때, 엔드포인트가 다음의 정보를 보내야 함
+
 * client_id & client secret
 * refresh_token
 * scope
 * grant_type
 
 ### 인증서버의 토큰 검증 방법
+
 1. authorization server와 resource server와 직접 API 통신
-   - client의 요청이 있을 때마다 resource 서버가 authorization server에 요청해야 하므로 불필요한 트래픽 발생
+    - client의 요청이 있을 때마다 resource 서버가 authorization server에 요청해야 하므로 불필요한 트래픽 발생
 2. authorization server와 resource가 동일한 DB 사용
 3. resource server가 시작 시에 authorization server와 연결하고 공개 인증서를 받아와 공개키로 AT를 검증
-   - resource server와 authorization server가 지속적으로 연결될 필요 없음
-   - 가장 권장되는 방법이고 가장 자주 사용되는 방법
+    - resource server와 authorization server가 지속적으로 연결될 필요 없음
+    - 가장 권장되는 방법이고 가장 자주 사용되는 방법
 
 ## OpenID Connect
+
 OpenID Connect는 OAuth 2.0 프레임워크의 최상부에 위치한 프로토콜
 
 OAuth 2.0이 scope를 가지는 access token으로 인증을 제공한다면, OpenID Conenct는 신원에 대한 정보(email, 주소 등 개인 정보)와 claim들을 포함한 새 ID 토큰을 도입함
@@ -846,11 +867,11 @@ OAuth와 OpenID Connect가 다른 점은 처음 요청에 openid의 특정 scope
 OAuth 프레임워크에서 OpenID connect가 authN, OAuth 2.0이 authZ를 담당
 
 * OpenID Connect의 중요성
-  * 모든 애플리케이션에서 신원은 중요함
-  * OAuth 2.0은 현대적 인증의 핵심이지만 인증 컴포넌트가 부족함
-  * OAuth 2.0의 최상단에 OpenID Connect를 구현함으로써 IAM(Identity Access Management) 전략이 완성됨
-  * 더 많은 애플리케이션이 서로 연결되고 인터넷에 더 많은 신원들이 생성되면서 이 신원들을 공유하는 것에 대한 수요가 증가함
-  * 애플리케이션들은 OpenID connect과 함께 신원을 쉽고 표준화된 방법으로 공유가 가능해짐
+    * 모든 애플리케이션에서 신원은 중요함
+    * OAuth 2.0은 현대적 인증의 핵심이지만 인증 컴포넌트가 부족함
+    * OAuth 2.0의 최상단에 OpenID Connect를 구현함으로써 IAM(Identity Access Management) 전략이 완성됨
+    * 더 많은 애플리케이션이 서로 연결되고 인터넷에 더 많은 신원들이 생성되면서 이 신원들을 공유하는 것에 대한 수요가 증가함
+    * 애플리케이션들은 OpenID connect과 함께 신원을 쉽고 표준화된 방법으로 공유가 가능해짐
 
 OIDC가 openid, profile, email, 주소를 표준화함
 
@@ -858,15 +879,15 @@ ID 토큰은 JWT를 사용
 
 OIDC 표준은 "/userinfo" 엔드포인트에서 신원 정보를 조회할 수 있음
 
-
 ## OAuth 구현하기
 
 ```java
+
 @Configuration
 public class SpringSecurityOauth2GitHubConfig {
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests((requests)->requests.anyRequest().authenticated())
+        http.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated())
                 .oauth2Login(Customizer.withDefaults());
         return http.build();
     }
@@ -877,19 +898,20 @@ public class SpringSecurityOauth2GitHubConfig {
     }
 
     private ClientRegistration clientRegistration() {
-		return CommonOAuth2Provider.GITHUB.getBuilder("github").clientId("clientId")
-	           .clientSecret("clientSecret").build();
-	 }
+        return CommonOAuth2Provider.GITHUB.getBuilder("github").clientId("clientId")
+                .clientSecret("clientSecret").build();
+    }
 }
 ```
 
 form 로그인은 더 이상 사용하지 않고 oauth2 로그인 방식을 사용함
 
 CommonOAuth2Provider에 설정된 주요 OAuth2 제공자들을 사용하여 ClientRegistration 객체를 생성하고 이를 바탕으로 ClientRegistrationRepository 빈을 등록한다.
+
 * application.properties 또는 application.yml에서 설정도 가능
 
-
 ## Keycloak
+
 OAuth 자체는 프로토콜일뿐 구현체를 제공하지 않음
 
 구글, 페이스북, 깃허브는 자체적으로 authorization server를 가지고 있지만 대다수는 그렇지 않음
@@ -899,6 +921,7 @@ Keycloak, Okta, ForgeRock Amazon Cognito 등 authorization server 제품들이 �
 Keycloak은 오픈 소스, 무료이며 다운로드하여 쉽게 사용 가능. 안정적인 서비스와 다양한 기능 제공.
 
 ## Keycloak 인증 서버 사용하기
+
 1. Keycloak 서버 다운로드 후 admin 계정 생성
 2. 새 realm 생성
 
@@ -906,18 +929,19 @@ Keycloak은 오픈 소스, 무료이며 다운로드하여 쉽게 사용 가능.
 
 ```mermaid
 flowchart LR
-  ui["UI app/Postman\n(App or Rest API Client)"] -->|1| keycloak["Keycloak(Auth Server)"]
-  ui -->|2| resourceServer[Resource Server]
-  resourceServer -->|3| keycloak
-  resourceServer -->|4| ui
+    ui["UI app/Postman\n(App or Rest API Client)"] -->|1| keycloak["Keycloak(Auth Server)"]
+    ui -->|2| resourceServer[Resource Server]
+    resourceServer -->|3| keycloak
+    resourceServer -->|4| ui
 ```
 
 1. 클라이언트 앱이나 REST API 클라이언트가 리소스를 Resource Server에서 가져오려면 Keycloak에서 access token(AT)을 받아와야 함
-2. 클라이언트 앱이 리소스에 접근하기 위해 가져온 AT로 Resource Server에 연결하여 
+2. 클라이언트 앱이 리소스에 접근하기 위해 가져온 AT로 Resource Server에 연결하여
 3. Resource Server는 AT의 유효성을 검증하기 위해 인증 서버(Keycloak)에 연결
 4. AT가 유효하면, Resource Server는 클라이언트 앱에 리소스를 응답해줌
 
 ## PKCE(Proof Key for Code Exchange)
+
 자바스크립트로는 클라이언트 비밀 정보를 감출 수 없음
 
 따라서, grant type을 authoriztion code가 아니라 PKCE로 사용하여 해결
@@ -938,7 +962,7 @@ flowchart LR
 sequenceDiagram
     User -) Public Client: 1. I want to access my resources
     Public Client -) User: 2. Tell the Auth Server that you are fine to do this action
-    User -) Auth Server: 3. Hello Auth server, plz allow the client to access my resources. Here are my  credentials to prove my identity and code challenge generated by client app along with client id
+    User -) Auth Server: 3. Hello Auth server, plz allow the client to access my resources. Here are my credentials to prove my identity and code challenge generated by client app along with client id
     Auth Server -) Public Client: 4. Hey Client, user allowed you to access his resources. Here is authorization code
     Public Client -) Auth Server: 5. Here is my client id, code verifier, authZ code. Plz provide me a token
     Auth Server -) Public Client: 6. Here is the access token from auth server
@@ -947,6 +971,7 @@ sequenceDiagram
 ```
 
 2, 3번 단계에서 클라이언트가 Auth Server에 요청을 보낼 때, 엔드포인트가 다음의 정보를 보내야 함
+
 * client_id
 * redirect_uri
 * scope
@@ -956,16 +981,18 @@ sequenceDiagram
 * code-challenge_method
 
 5번 단계에서 Client가 Auth Server로부터 auth code를 받은 후에 Client 다음 값들과 같이 토큰을 Auth Server에 요청함
+
 * code
 * client_id & client_secret
 * grant_type
 * redirect_uri
 * code_verifier
 
-PKCE는 원래 모바일 앱, SPA, 자바스크립트 애플리케이션 내에서 사용하기 위해 만들어졌으나, 인증 코드 인젝션 공격이나 인증 코드 조작를 회피할 수 있어서 최근에는 클라이언트가 비밀 정보를 안전하게 저장할 수 있다고 하더라도 PKCE를 사용하도록 권장됨
-
+PKCE는 원래 모바일 앱, SPA, 자바스크립트 애플리케이션 내에서 사용하기 위해 만들어졌으나, 인증 코드 인젝션 공격이나 인증 코드 조작를 회피할 수 있어서 최근에는 클라이언트가 비밀 정보를 안전하게 저장할 수
+있다고 하더라도 PKCE를 사용하도록 권장됨
 
 ## 기타 Keycloak 기능
+
 로그인 페이지 변경 - Realm settings > Themes에서 수정도 가능
 https://www.keycloak.org/docs/latest/server_development/index.html#_themes 참조
 
