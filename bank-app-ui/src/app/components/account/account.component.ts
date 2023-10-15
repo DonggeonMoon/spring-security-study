@@ -14,9 +14,9 @@ export class AccountComponent implements OnInit {
   constructor(private dashboardService: DashboardService) { }
 
   ngOnInit(): void {
-    this.user = JSON.parse(sessionStorage.getItem('userdetails')!);
+    this.user = JSON.parse(sessionStorage.getItem('userdetails') || "");
     if(this.user){
-      this.dashboardService.getAccountDetails(this.user.id).subscribe(
+      this.dashboardService.getAccountTransactions(this.user.email).subscribe(
         responseData => {
         this.account = <any> responseData.body;
         });
