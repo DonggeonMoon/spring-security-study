@@ -32,6 +32,19 @@ graph LR
     2 -->|10| 1
 ```
 
+Authentication: 인증된 사용자를 저장하기 위한 객체. UsernamePasswordAuthenticationFilter 같은 필터가 HTTP 요청에서 사용자 정보를 추출해 생성
+
+AuthenticationManager: 필터에서 요청을 받으면 사용자 정보의 검증을 AuthenticationProvider에 위임하는 객체. 모든 사용 가능한 AuthenticationProvider 객체들을
+관리함
+
+AuthenticationProvider: 사용자 정보를 검증하는 핵심 로직을 담고 있음
+
+UserDetailsService/UserDetailsManager: 사용자 정보를 DB나 저장소 등에서 조회, 생성, 수정, 삭제하는 작업을 담당
+
+PasswordEncoder: 비밀번호 인코딩, 해시 작업 수행
+
+SecurityContext: AuthenticationManager가 인증을 완료된 Authentication을 반환하면 SecurityContext는 이를 저장
+
 ## 스프링 시큐리티 필터
 
 Servlet Container(Tomcat 등)에는 HTTP 요청과 응답을 가로채는 필터가 존재
@@ -40,22 +53,24 @@ Servlet Container(Tomcat 등)에는 HTTP 요청과 응답을 가로채는 필터
 
 약 20종 이상
 
+### 대표적인 스프링 시큐리티 필터
+
 * AuthorizationFilter - 공개 URL인 경우에만 통과
-* DefaultLoginPageGeneratingFilter - 비공개 URL 접근시 기본 로그인 페이지 보여줌
-* UsernamePasswordAuthenticationFilter - username과 password를 요청 서블릿에서 뽑아내는 역할
+* DefaultLoginPageGeneratingFilter - 비공개 URL 접근 시 기본 로그인 페이지 보여줌
+* UsernamePasswordAuthenticationFilter - username과 password를 HttpServletRequest에서 뽑아내는 역할
     * UsernamePasswordAuthenticationToken(Authentication 구현체) 생성해줌
-    * ProviderManager(AuthenticationManager의 구현체)에 인증 요청(authenticate() 메서드)
-        * ProviderManager는 여러 AuthenticationProvider을 인증 성공할 때까지 순회
+    * ProviderManager(AuthenticationManager의 구현체)에 인증 요청(`authenticate()` 메서드)
+        * ProviderManager는 여러 AuthenticationProvider를 인증 성공할 때까지 순회(여러 Provider가 성공해도 처음 성공하는 것만 사용)
     * DaoAuthenticationProvider(AbstractUserDetailsAuthenticationProvider의 구현체)
-        * authenticate()가 인증 로직 수행
-            * retrieveUser()가 사용자 정보 가져옴
-            * retrieveUser()는 UserDetailsManager, UserDetailsService의 도움을 받음
-            * 저장소에서 사용자 정보를 가져와야 할 때 UserDetailsManager, UserDetailsService을 사용
-            * PasswordEncoder는 비밀번호를 암호화(해시)하는 데 사용
-    * DaoAuthenticationProvider는 InMemoryUserDetailsManager(UserDetailsManager 구현체)를 사용하여 사용자 정보를 가져옴
-        * `application.properties`에서 username과 password를 설정하면 in-memory에 로드됨
-        * retreiveUser() 메서드가 로드된 username과 password를 바탕으로 UserDetails 객체를 생성해줌
-        * 이 UserDetails를 additionalAuthenticationChecks() 메서드에게 전달하고 이 메서드는 기본 PasswordEncoder를 사용하여 일치하는지 확인함
+        * `authenticate()`가 인증 로직 수행
+        * `retrieveUser()`가 사용자 정보 가져옴
+        * `retrieveUser()`는 UserDetailsManager나 UserDetailsService 구현체의 도움을 받음
+        * 저장소에서 사용자 정보를 가져와야 할 때 UserDetailsManager나 UserDetailsService 구현체를 사용
+        * PasswordEncoder는 비밀번호를 암호화(해시)하는 데 사용
+        * DaoAuthenticationProvider는 기본적으로 InMemoryUserDetailsManager(UserDetailsManager 구현체)를 사용하여 사용자 정보를 가져옴
+            * `application.properties`에서 username과 password를 설정하면 in-memory에 로드됨
+            * `retrieveUser()` 메서드가 로드된 username과 password를 바탕으로 UserDetails 객체를 생성해줌
+            * 이 UserDetails를 `additionalAuthenticationChecks()` 메서드에게 전달하고 이 메서드는 기본 PasswordEncoder를 사용하여 일치하는지 확인함
 
 ## 스프링 시큐리티 기본 필터 체인 구현하기
 
@@ -173,7 +188,7 @@ public class ProjectSecurityConfig {
 
 ## 사용자 정보 관리
 
-* UserDetailsService - loadUserByUsername()로 사용자 정보 가져옴
+* UserDetailsService - `loadUserByUsername()`로 사용자 정보 가져옴
     * username과 password 두 가지 정보가 아닌 username으로만 조회하는 이유 - 불필요하게 실제 비밀번호를 네트워크나 데이터베이스 서버로 전송할 필요 없음
     * UserDetailsManager - UserDetailsService를 확장
         * 사용자 생성, 수정, 삭제, 비밀번호 변경, 존재 확인 등 메서드 제공
@@ -405,7 +420,7 @@ public class ProjectSecurityConfig {
 
 이때 OncePerRequestFilter 구현체에서 쿠키 없이 헤더에만 토큰 보내면 스프링 시큐리티가 자동으로 쿠키 생성해줌
 
-`.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)`을 csrf() 메서드 뒤에 추가
+`.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)`을 `csrf()` 메서드 뒤에 추가
 
 ```text
 .securityContext(httpSecuritySecurityContextConfigurer ->
@@ -443,9 +458,9 @@ Authority 생성 시 role 필요
 
 RequestMatcher에 다음 메서드 사용
 
-* hasAuthority() - 하나의 authority를 받음. 제시된 authority가 있어야 엔드포인트 통과 가능.
-* hasAnyAuthority() - 여러 개의 authority를 받음. 제시된 authority 중 하나라도 있으면 엔드포인트 통과 가능.
-* access() - SpEL 사용 사용하여 복잡한 규칙 사용 가능
+* `hasAuthority()` - 하나의 authority를 받음. 제시된 authority가 있어야 엔드포인트 통과 가능.
+* `hasAnyAuthority()` - 여러 개의 authority를 받음. 제시된 authority 중 하나라도 있으면 엔드포인트 통과 가능.
+* `access()` - SpEL 사용 사용하여 복잡한 규칙 사용 가능
 
 ## authority vs. role
 
@@ -459,9 +474,9 @@ role은 권한이나 행위의 묶음임(coarse-grained)
 
 RequestMatcher에 다음 메서드 사용. 사용 시에는 `ROLE_` 접두어를 빼고 입력해야 함.
 
-* hasRole() - 하나의 role을 받음. 제시된 role이 있어야 엔드포인트 통과 가능.
-* hasAnyRole() - 여러 개의 role을 받음. 제시된 role 중 하나라도 있으면 엔드포인트 통과 가능.
-* access() - SpEL 사용 사용하여 복잡한 규칙 사용 가능
+* `hasRole()` - 하나의 role을 받음. 제시된 role이 있어야 엔드포인트 통과 가능.
+* `hasAnyRole()` - 여러 개의 role을 받음. 제시된 role 중 하나라도 있으면 엔드포인트 통과 가능.
+* `access()` - SpEL 사용 사용하여 복잡한 규칙 사용 가능
 
 ## Custom Filter
 
@@ -493,7 +508,7 @@ RequestMatcher에 다음 메서드 사용. 사용 시에는 `ROLE_` 접두어를
     * ExceptionTranslationFilter
     * FilterSecurityInterceptor
 
-FilterChainProxy 내부 클래스인 VirtualFilterChain의 doFilter()가 활성화된 필터들을 순회하면서 로직을 실행함
+FilterChainProxy 내부 클래스인 VirtualFilterChain의 `doFilter()`가 활성화된 필터들을 순회하면서 로직을 실행함
 
 커스텀 필터를 만드려면 jakarta.servlet.Filter 클래스(구 javax.servlet.Filter)를 구현하면 됨
 
@@ -507,7 +522,7 @@ classDiagram
 
 ## 커스텀 필터 추가 예제
 
-doChain() 메서드에 비즈니스 로직을 구현 후 아래 메서드를 사용하여 필터 체인에 커스텀 필터를 추가
+`doChain()` 메서드에 비즈니스 로직을 구현 후 아래 메서드를 사용하여 필터 체인에 커스텀 필터를 추가
 
 * addFilterBefore(filter, class) - 특정 필터의 앞에 필터를 추가
 * addFilterAfter(filter, class) - 특정 필터의 뒤에 필터를 추가
@@ -558,7 +573,7 @@ graph LR
     4 --> 3
 ```
 
-마지막 예제(addFilterAt())의 경우 순서를 보장할 수 없으며, 기존 필터를 대체하지 않는다
+마지막 예제(`addFilterAt()`)의 경우 순서를 보장할 수 없으며, 기존 필터를 대체하지 않는다
 
 필터 순서를 통제할 수 없고 임의로 순서가 정해지기 때문에 같은 위치에 필터를 넣는 것은 피해야 함
 
@@ -574,7 +589,7 @@ graph LR
 
 요청당 한 번 실행을 보장해야 한다면 OncePerRequestFilter를 사용
 
-OncePerRequestFilter는 비즈니스 구현을 doFilter()가 아닌 doFilterInternal()에 하면 됨
+OncePerRequestFilter는 비즈니스 구현을 `doFilter()`가 아닌 `doFilterInternal()`에 하면 됨
 
 BasicAuthenticationFilter도 OncePerRequestFilter를 확장한 클래스
 
