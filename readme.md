@@ -1,6 +1,6 @@
 # spring-security-study
 
-Spring Security에 대해 공부한 내용을 정리합니다.
+스프링 시큐리티에 대해 공부한 내용을 정리합니다.
 
 ## 스프링 시큐리티를 쓰는 이유
 
@@ -20,12 +20,12 @@ Spring Security에 대해 공부한 내용을 정리합니다.
 title: Spring Security Internal Flow
 ---
 graph LR
-    1["🖥️ User Entered\nCredentials"] -->|1| 2[Spring Security\nFilters\n]
+    1["🖥️ User Entered\nCredentials\n"] -->|1| 2[Spring Security\nFilters\n]
     2 -->|2| 3[Authentication]
-    2 -->|9| 4[Spring context]
+    2 -->|9| 4[Spring Context]
     2 -->|3| 5[Authentication Manager]
     5 -->|4| 6[Authentication Providers]
-    6 -->|5| 7[UserDetailsManager, UserDetailsService]
+    6 -->|5| 7[UserDetailsService, UserDetailsManager]
     6 -->|6| 8[Password Encoder]
     6 -->|7| 5
     5 -->|8| 2
@@ -34,7 +34,9 @@ graph LR
 
 ## 스프링 시큐리티 필터
 
-스프링 시큐리티에서는 요청과 응답을 가로채는 필터가 존재
+Servlet Container(Tomcat 등)에는 HTTP 요청과 응답을 가로채는 필터가 존재
+
+스프링 시큐리티는 필터를 기반으로 보안을 강화함
 
 약 20종 이상
 
@@ -365,11 +367,11 @@ CSRF(Cross-Site Request Forgery)는 CORS와 다르게 보안 공격임
 
 ex) 웹 사이트에 로그인된 상태에서 사용자가 외부 링크 클릭 시 로그인된 웹사이트의 보안 필요 동작을 수행을 하게 됨
 
-기본적으로 Spring Security는 CSRF 보호 기능을 제공하며 POST나 PUT 연산 등 DB 삽입 또는 수정 시 적용됨
+기본적으로 스프링 시큐리티는 CSRF 보호 기능을 제공하며 POST나 PUT 연산 등 DB 삽입 또는 수정 시 적용됨
 
 해결책은 로그인 시에 임의로 생성된 CSRF 토큰을 주고 요청 발생 시에 토큰을 검증함
 
-Spring Security에서 CSRF를 실무에서 비활성화하는 것은 지양해야 함
+스프링 시큐리티에서 CSRF를 실무에서 비활성화하는 것은 지양해야 함
 
 ```java
 public class ProjectSecurityConfig {
@@ -401,7 +403,7 @@ public class ProjectSecurityConfig {
 
 로그인 이후에 CSRF 토큰 값(쿠키와 헤더 값)을 UI 애플리케이션으로 보내야 함
 
-이때 OncePerRequestFilter 구현체에서 쿠키 없이 헤더에만 토큰 보내면 Spring Security가 자동으로 쿠키 생성해줌
+이때 OncePerRequestFilter 구현체에서 쿠키 없이 헤더에만 토큰 보내면 스프링 시큐리티가 자동으로 쿠키 생성해줌
 
 `.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)`을 csrf() 메서드 뒤에 추가
 
@@ -424,7 +426,7 @@ authorization은 "인증 이후" 특정 사용자가 가진 권한이 무엇인�
 
 실패시 403 Forbidden 에러 응답
 
-Spring Security에서는 authority, role로 구분함
+스프링 시큐리티에서는 authority, role로 구분함
 
 ```mermaid
 classDiagram
@@ -451,7 +453,7 @@ authority는 하나의 권한이나 행위를 뜻함(fine-grained)
 
 role은 권한이나 행위의 묶음임(coarse-grained)
 
-Spring Security에서는 authority와 role 모두 grated authority 인터페이스로 표현하지만 role은 특별히 `ROLE_` 접두어를 붙여야 함
+스프링 시큐리티에서는 authority와 role 모두 grated authority 인터페이스로 표현하지만 role은 특별히 `ROLE_` 접두어를 붙여야 함
 
 ## Role 설정
 
